@@ -418,6 +418,18 @@ BOOST_FIXTURE_TEST_CASE(StartAttack, AttackFixture<>)
     TestFailingAttack(gwv, milBld1Pos, attackSrc, 1u);
 }
 
+BOOST_FIXTURE_TEST_CASE(TroopLimitCommandIgnoresInvalidRank, AttackFixture<>)
+{
+    const unsigned maxTroops = milBld0->GetMaxTroopsCt();
+    const unsigned limit = maxTroops + 10;
+
+    this->SetTroopLimit(milBld0Pos, 0, limit);
+    BOOST_TEST_REQUIRE(milBld0->GetTroopLimit(0) == limit);
+
+    this->SetTroopLimit(milBld0Pos, NUM_SOLDIER_RANKS, 0);
+    BOOST_TEST_REQUIRE(milBld0->GetTroopLimit(0) == limit);
+}
+
 BOOST_FIXTURE_TEST_CASE(ConquerBld, AttackFixture<>)
 {
     AddSoldiers(milBld0Pos, 1, 5);
