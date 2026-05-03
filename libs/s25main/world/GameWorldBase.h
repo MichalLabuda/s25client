@@ -16,6 +16,7 @@
 #include <set>
 #include <vector>
 
+class ShipPathData;
 class EventManager;
 class FreePathFinder;
 class GameInterface;
@@ -51,6 +52,7 @@ class GameWorldBase : public World
 {
     std::unique_ptr<RoadPathFinder> roadPathFinder;
     std::unique_ptr<FreePathFinder> freePathFinder;
+    mutable std::unique_ptr<ShipPathData> shipPathData;
     PostManager postManager;
     mutable NotificationManager notifications;
 
@@ -114,12 +116,13 @@ public:
     /// Find path for ships to a specific harbor and see. Return true on success
     /// If starting point equals the coastal point of target harbor, set length 0, clear route and return true.
     bool FindShipPathToHarbor(MapPoint start, HarborId harborId, SeaId seaId, std::vector<Direction>* route,
-                              unsigned* length);
+                              unsigned* length) const;
     /// Find path for ships with a limited distance. Return true on success
     bool FindShipPath(MapPoint start, MapPoint dest, unsigned maxDistance, std::vector<Direction>* route,
-                      unsigned* length);
+                      unsigned* length) const;
     RoadPathFinder& GetRoadPathFinder() const { return *roadPathFinder; }
     FreePathFinder& GetFreePathFinder() const { return *freePathFinder; }
+    ShipPathData& GetShipPathData() const;
 
     /// Return flag that is on road at given point. dir will be set to the direction of the road from the returned flag
     /// prevDir (if set) will be skipped when searching for the road points
