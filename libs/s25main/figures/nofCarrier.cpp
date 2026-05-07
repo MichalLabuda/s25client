@@ -630,13 +630,14 @@ void nofCarrier::LostWork()
 
             // Look for the shore
             const unsigned maxNodeDistance = 5;
-            std::vector<MapPoint> coastPoints =
+            const auto coastPoints =
               world->GetMatchingPointsInRadius(tmpPos, maxNodeDistance, IsCoastalAndForFigs(*world));
+            shore_path.clear();
             for(const auto& it : coastPoints)
             {
                 // 10x the node distance should be enough, otherwise it would be to far to paddle
                 const unsigned maxDistance = maxNodeDistance * 10;
-                if(world->FindShipPath(tmpPos, it, maxDistance, &shore_path, nullptr))
+                if(it == tmpPos || world->FindShipPath(tmpPos, it, maxDistance, &shore_path, nullptr))
                 {
                     // Ok let's paddle to the coast
                     rs_pos = 0;

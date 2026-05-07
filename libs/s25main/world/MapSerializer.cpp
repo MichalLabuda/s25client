@@ -200,7 +200,14 @@ void MapSerializer::Deserialize(GameWorldBase& world, SerializedGameData& sgd, G
                     {
                         if(!helpers::contains(otherSeas, sea))
                             continue;
-                        unsigned len;
+                        unsigned len = 0;
+                        const auto startPoint = world.GetCoastalPoint(startHbId, sea);
+                        const auto nbPoint = world.GetCoastalPoint(neighbor.id, sea);
+                        if(neighbor.distance == 0 && startPoint == nbPoint)
+                        {
+                            neighbor.sea = sea;
+                            break;
+                        }
                         if(world.FindShipPath(world.GetCoastalPoint(startHbId, sea),
                                               world.GetCoastalPoint(neighbor.id, sea), neighbor.distance, nullptr, &len)
                            && len == neighbor.distance)

@@ -84,10 +84,12 @@ void ShipPathData::initHarborConnections()
             // Connections are unique
             RTTR_Assert(!helpers::contains_if(curConnections, HarborConnection::Matcher{nb.id, nb.sea}));
             curConnections.push_back(HarborConnection{nb.id, nb.sea, {}});
-            unsigned len;
+            unsigned len = 0;
+            const auto startPoint = world_.GetCoastalPoint(startHbId, nb.sea);
+            const auto nbPoint = world_.GetCoastalPoint(nb.id, nb.sea);
             const bool found =
-              world_.FindShipPath(world_.GetCoastalPoint(startHbId, nb.sea), world_.GetCoastalPoint(nb.id, nb.sea),
-                                  nb.distance, &curConnections.back().route, &len);
+              (startPoint == nbPoint)
+              || world_.FindShipPath(startPoint, nbPoint, nb.distance, &curConnections.back().route, &len);
             RTTR_Assert(found);
             RTTR_Assert(len == nb.distance);
         }
