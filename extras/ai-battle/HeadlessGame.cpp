@@ -43,7 +43,8 @@ void printConsole(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 void printConsole(const char* fmt, ...);
 #endif
 
-HeadlessGame::HeadlessGame(const GlobalGameSettings& ggs, const bfs::path& map, const std::vector<AI::Info>& ais)
+HeadlessGame::HeadlessGame(const GlobalGameSettings& ggs, const bfs::path& map, const std::vector<AI::Info>& ais,
+                           const bfs::path& luaPath)
     : map_(map), game_(ggs, std::make_unique<EventManager>(0), GeneratePlayerInfo(ais)), world_(game_.world_),
       em_(*static_cast<EventManager*>(game_.em_.get()))
 {
@@ -51,6 +52,14 @@ HeadlessGame::HeadlessGame(const GlobalGameSettings& ggs, const bfs::path& map, 
     if(!loader.Load(map))
         throw std::runtime_error("Could not load " + map.string());
     MapLoader::SetupResources(world_);
+
+    if(!luaPath.empty())
+    {
+        if(!loader.LoadLuaScript(game_, localState_, luaPath))
+            throw std::runtime_error("Failed to load Lua script: " + luaPath.string());
+        luaPath_ = luaPath;
+        bnw::cout << "Lua script loaded: " << luaPath << '\n';
+    }
 
     players_.clear();
     for(unsigned playerId = 0; playerId < world_.GetNumPlayers(); ++playerId)
@@ -152,15 +161,6 @@ void HeadlessGame::RecordReplay(const bfs::path& path, unsigned random_init)
     replay_.ggs = game_.ggs_;
     if(!replay_.StartRecording(path, mapInfo, random_init))
         throw std::runtime_error("Replayfile could not be opened!");
-}
-
-void HeadlessGame::LoadLuaScript(const bfs::path& luaPath)
-{
-    MapLoader loader(world_);
-    if(!loader.LoadLuaScript(game_, localState_, luaPath))
-        throw std::runtime_error("Failed to load Lua script: " + luaPath.string());
-    luaPath_ = luaPath; // remember for embedding in the replay
-    bnw::cout << "Lua script loaded: " << luaPath << '\n';
 }
 
 void HeadlessGame::SaveGame(const bfs::path& path) const

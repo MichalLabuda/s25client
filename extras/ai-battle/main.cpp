@@ -200,9 +200,7 @@ int main(int argc, char** argv)
             }
         }
 
-        HeadlessGame game(ggs, mapPath, ais);
-        if(lua_path)
-            game.LoadLuaScript(RTTRCONFIG.ExpandPath(*lua_path));
+        HeadlessGame game(ggs, mapPath, ais, lua_path ? RTTRCONFIG.ExpandPath(*lua_path) : bfs::path{});
         if(replay_path)
             game.RecordReplay(RTTRCONFIG.ExpandPath(*replay_path), random_init);
 

@@ -22,7 +22,8 @@ class EventManager;
 class HeadlessGame
 {
 public:
-    HeadlessGame(const GlobalGameSettings& ggs, const boost::filesystem::path& map, const std::vector<AI::Info>& ais);
+    HeadlessGame(const GlobalGameSettings& ggs, const boost::filesystem::path& map, const std::vector<AI::Info>& ais,
+                 const boost::filesystem::path& luaPath = {});
     ~HeadlessGame();
 
     void Run(unsigned maxGF = std::numeric_limits<unsigned>::max());
@@ -30,7 +31,6 @@ public:
 
     void RecordReplay(const boost::filesystem::path& path, unsigned random_init);
     void SaveGame(const boost::filesystem::path& path) const;
-    void LoadLuaScript(const boost::filesystem::path& luaPath);
 
 private:
     void PrintState();
