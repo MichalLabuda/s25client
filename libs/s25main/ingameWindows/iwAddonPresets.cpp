@@ -43,7 +43,7 @@ static bfs::path GetPresetsDir()
     return RTTRCONFIG.ExpandPath(s25::folders::addonPresets);
 }
 
-static std::optional<std::map<unsigned, unsigned>> LoadStatesFromFile(const bfs::path& filePath)
+static std::optional<std::map<unsigned, unsigned>> LoadPresetsFromFile(const bfs::path& filePath)
 {
     libsiedler2::Archiv archive;
     if(libsiedler2::Load(filePath, archive) != 0)
@@ -176,7 +176,6 @@ iwSaveAddonPreset::iwSaveAddonPreset(std::map<unsigned, unsigned> states)
 bfs::path iwSaveAddonPreset::GetSaveFilePath() const
 {
     std::string name = GetCtrl<ctrlEdit>(ID_edtName)->GetText();
-    name = bfs::path(name).filename().string();
 
     // Trim leading/trailing whitespace
     const auto first = name.find_first_not_of(" \t\r\n");
@@ -193,6 +192,15 @@ bfs::path iwSaveAddonPreset::GetSaveFilePath() const
 
 void iwSaveAddonPreset::DoAction()
 {
+    const std::string rawName = GetCtrl<ctrlEdit>(ID_edtName)->GetText();
+    if(rawName.find_first_of("/\\") != std::string::npos)
+    {
+        WINDOWMANAGER.Show(std::make_unique<iwMsgbox>(
+          _("Invalid Name"), _("The preset name must not contain path separators. Please choose a different name."),
+          this, MsgboxButton::Ok, MsgboxIcon::ExclamationRed));
+        return;
+    }
+
     const bfs::path filePath = GetSaveFilePath();
     if(filePath.empty())
         return;
@@ -274,7 +282,7 @@ void iwLoadAddonPreset::DoAction()
     if(filePath.empty())
         return;
 
-    const auto states = LoadStatesFromFile(filePath);
+    const auto states = LoadPresetsFromFile(filePath);
     if(!states)
     {
         WINDOWMANAGER.Show(std::make_unique<iwMsgbox>(
