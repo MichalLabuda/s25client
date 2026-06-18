@@ -6,6 +6,7 @@
 
 #include "IngameWindow.h"
 #include "addons/const_addons.h"
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -46,4 +47,5 @@ private:
     /// Aktualisiert die Addons, die angezeigt werden sollen
     void UpdateView(AddonGroup selection);
     bool isReadOnly(AddonId) const;
+    void applyAddonStates(const std::map<unsigned, unsigned>& states);
 };
