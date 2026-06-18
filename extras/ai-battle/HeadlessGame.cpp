@@ -1,10 +1,11 @@
-// Copyright (C) 2005 - 2024 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (C) 2005 - 2026 Settlers Freaks (sf-team at siedler25.org)
 //
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "HeadlessGame.h"
 #include "EventManager.h"
 #include "GlobalGameSettings.h"
+#include "ILocalGameState.h"
 #include "PlayerInfo.h"
 #include "Savegame.h"
 #include "factories/AIFactory.h"
@@ -13,6 +14,7 @@
 #include "world/MapLoader.h"
 #include "gameTypes/MapInfo.h"
 #include "gameData/GameConsts.h"
+#include "s25util/colors.h"
 #include <boost/nowide/iostream.hpp>
 #include <chrono>
 #include <cstdio>
@@ -27,6 +29,16 @@ std::string HumanReadableNumber(unsigned num);
 
 namespace bfs = boost::filesystem;
 namespace bnw = boost::nowide;
+
+namespace {
+struct HeadlessLocalState : ILocalGameState
+{
+    unsigned GetPlayerId() const override { return 0; }
+    bool IsHost() const override { return true; }
+    std::string FormatGFTime(unsigned) const override { return ""; }
+    void SystemChat(const std::string& msg) override { bnw::cout << "[lua] " << msg << "\n"; }
+};
+} // namespace
 using bfs::canonical;
 
 #ifdef WIN32
@@ -48,6 +60,7 @@ HeadlessGame::HeadlessGame(const GlobalGameSettings& ggs, const bfs::path& map, 
     MapLoader loader(world_);
     if(!loader.Load(map))
         throw std::runtime_error("Could not load " + map.string());
+    MapLoader::SetupResources(world_);
 
     players_.clear();
     for(unsigned playerId = 0; playerId < world_.GetNumPlayers(); ++playerId)
@@ -138,11 +151,27 @@ void HeadlessGame::RecordReplay(const bfs::path& path, unsigned random_init)
     mapInfo.mapData.CompressFromFile(mapInfo.filepath, &mapInfo.mapChecksum);
     mapInfo.type = MapType::OldMap;
 
+    if(!luaPath_.empty() && bfs::exists(luaPath_))
+    {
+        mapInfo.luaFilepath = luaPath_;
+        mapInfo.luaData.CompressFromFile(luaPath_, &mapInfo.luaChecksum);
+    }
+
     for(unsigned playerId = 0; playerId < world_.GetNumPlayers(); ++playerId)
         replay_.AddPlayer(world_.GetPlayer(playerId));
     replay_.ggs = game_.ggs_;
     if(!replay_.StartRecording(path, mapInfo, random_init))
         throw std::runtime_error("Replayfile could not be opened!");
+}
+
+void HeadlessGame::LoadLuaScript(const bfs::path& luaPath)
+{
+    HeadlessLocalState state;
+    MapLoader loader(world_);
+    if(!loader.LoadLuaScript(game_, state, luaPath))
+        throw std::runtime_error("Failed to load Lua script: " + luaPath.string());
+    luaPath_ = luaPath; // remember for embedding in the replay
+    bnw::cout << "Lua script loaded: " << luaPath << '\n';
 }
 
 void HeadlessGame::SaveGame(const bfs::path& path) const
@@ -232,6 +261,7 @@ std::vector<PlayerInfo> GeneratePlayerInfo(const std::vector<AI::Info>& ais)
         }
         pi.nation = Nation::Romans;
         pi.team = Team::None;
+        pi.color = PLAYER_COLORS[ret.size() % PLAYER_COLORS.size()];
         ret.push_back(pi);
     }
     return ret;

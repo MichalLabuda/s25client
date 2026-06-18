@@ -1,4 +1,4 @@
-// Copyright (C) 2005 - 2024 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (C) 2005 - 2026 Settlers Freaks (sf-team at siedler25.org)
 //
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -29,6 +29,7 @@ public:
 
     void RecordReplay(const boost::filesystem::path& path, unsigned random_init);
     void SaveGame(const boost::filesystem::path& path) const;
+    void LoadLuaScript(const boost::filesystem::path& luaPath);
 
 private:
     void PrintState();
@@ -41,6 +42,7 @@ private:
 
     Replay replay_;
     boost::filesystem::path replayPath_;
+    boost::filesystem::path luaPath_;
 
     unsigned lastReportGf_ = 0;
     std::chrono::steady_clock::time_point gameStartTime_;
