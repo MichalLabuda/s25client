@@ -73,7 +73,7 @@ static std::optional<std::map<unsigned, unsigned>> LoadStatesFromFile(const bfs:
 
 // iwAddonPresetsBase
 iwAddonPresetsBase::iwAddonPresetsBase(const std::string& title, const std::string& actionLabel)
-    : IngameWindow(CGI_ADDON_PRESETS, IngameWindow::posLastOrCenter, Extent(440, 320), title,
+    : IngameWindow(CGI_ADDON_PRESETS, IngameWindow::posLastOrCenter, Extent(440, 330), title,
                    LOADER.GetImageN("resource", 41))
 {
     using SRT = ctrlTable::SortType;
