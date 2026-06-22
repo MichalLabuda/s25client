@@ -540,7 +540,7 @@ protected:
         : Coords(GCType::ChangeReserve, pt), rank(rank), count(count)
     {}
     ChangeReserve(Serializer& ser)
-        : Coords(GCType::ChangeReserve, ser), rank(ser.PopUnsignedChar()), count(ser.PopUnsignedInt())
+        : Coords(GCType::ChangeReserve, ser), rank(detail::popSoldierRank(ser)), count(ser.PopUnsignedInt())
     {}
 
 public:
