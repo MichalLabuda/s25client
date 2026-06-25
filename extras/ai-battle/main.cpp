@@ -20,10 +20,16 @@
 #include <boost/nowide/args.hpp>
 #include <boost/nowide/filesystem.hpp>
 #include <boost/nowide/iostream.hpp>
-#include <boost/optional.hpp>
 #include <boost/program_options.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <iomanip>
+#if BOOST_VERSION >= 109000
+#    include <optional>
+using std::optional;
+#else
+#    include <boost/optional.hpp>
+using boost::optional;
+#endif
 
 namespace bnw = boost::nowide;
 namespace bfs = boost::filesystem;
@@ -66,10 +72,10 @@ int main(int argc, char** argv)
     bnw::nowide_filesystem();
     bnw::args _(argc, argv);
 
-    boost::optional<std::string> replay_path;
-    boost::optional<std::string> savegame_path;
-    boost::optional<std::string> lua_path;
-    boost::optional<std::string> settings_path;
+    optional<std::string> replay_path;
+    optional<std::string> savegame_path;
+    optional<std::string> lua_path;
+    optional<std::string> settings_path;
     unsigned random_init = static_cast<unsigned>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     unsigned random_ai_init = random_init;
 
