@@ -57,6 +57,8 @@ static void dummySuppressUnused(std::ostream& out)
 // LCOV_EXCL_STOP
 
 namespace {
+// Expose the protected constructors only to serialize the actual command format in this test,
+// rather than duplicating the production Serialize() implementation.
 class TestSetTroopLimit : public gc::SetTroopLimit
 {
 public:
