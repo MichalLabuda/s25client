@@ -6,7 +6,7 @@
 
 #include "IngameWindow.h"
 #include <boost/filesystem/path.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 #include <functional>
 #include <map>
 #include <string>
@@ -23,7 +23,7 @@ protected:
 
     void Msg_EditEnter(unsigned ctrl_id) override;
     void Msg_ButtonClick(unsigned ctrl_id) override;
-    void Msg_TableSelectItem(unsigned ctrl_id, const boost::optional<unsigned>& selection) override;
+    void Msg_TableSelectItem(unsigned ctrl_id, const std::optional<unsigned>& selection) override;
     void Msg_MsgBoxResult(unsigned msgbox_id, MsgboxResult mbr) override;
 
 private:

@@ -33,6 +33,8 @@ public:
     iwSave();
 
 private:
+    boost::filesystem::path GetSaveFilePath() const;
+
     // Save game
     void SaveLoad() override;
 

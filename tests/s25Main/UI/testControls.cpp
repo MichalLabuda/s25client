@@ -1,4 +1,4 @@
-// Copyright (C) 2005 - 2021 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (C) 2005 - 2026 Settlers Freaks (sf-team at siedler25.org)
 //
 // SPDX-License-Identifier: GPL-2.0-or-later
 
@@ -237,6 +237,61 @@ BOOST_FIXTURE_TEST_CASE(EditShowsCorrectChars, uiHelper::Fixture)
     while(static_cast<unsigned>(curCursorPos++) < curChars.size())
         edt.Msg_KeyDown(KeyEvent(KeyType::Right));
     BOOST_TEST_REQUIRE(txt->GetText() == txtWithoutFirst);
+}
+
+BOOST_FIXTURE_TEST_CASE(EditFileNameOnlyFiltersInvalidChars, uiHelper::Fixture)
+{
+    const auto font = createMockFont({'a', 'b', '1', '2', ' ', '<', '>', ':', '"', '/', '\\', '|', '?', '*'});
+    ctrlEdit edt(nullptr, 0, DrawPoint(0, 0), Extent(200, 15), TextureColor::Green1, font.get());
+    edt.SetFileNameOnly(true);
+
+    MouseCoords mc(edt.GetPos());
+    mc.ldown = true;
+    edt.Msg_LeftDown(mc); // give focus
+
+    for(char32_t c : {U'a', U'b', U'1', U'2', U' '})
+        edt.Msg_KeyDown(KeyEvent(c));
+    BOOST_TEST(edt.GetText() == "ab12 ");
+
+    for(char32_t c : {U'<', U'>', U':', U'"', U'/', U'\\', U'|', U'?', U'*'})
+        edt.Msg_KeyDown(KeyEvent(c));
+    BOOST_TEST(edt.GetText() == "ab12 "); // all rejected, text unchanged
+
+    // SetText() has its own erase_if filter (separate code path from AddChar - doesn't go through
+    // the font's CharExist() gate, so every char in the expected result must be in the mock font)
+    edt.SetText("a/b\\1");
+    BOOST_TEST(edt.GetText() == "ab1");
+}
+
+BOOST_FIXTURE_TEST_CASE(EditSpaceKeyDoesNotDuplicateChar, uiHelper::Fixture)
+{
+    const auto font = createMockFont({U' ', '?'}); // '?' is required as glFont's missing-glyph fallback
+    ctrlEdit edt(nullptr, 0, DrawPoint(0, 0), Extent(200, 15), TextureColor::Green1, font.get());
+    MouseCoords mc(edt.GetPos());
+    mc.ldown = true;
+    edt.Msg_LeftDown(mc);
+
+    // A real space press fires both of these on SDL2 (SDL_KEYDOWN+SDL_TEXTINPUT) and WinAPI
+    // (WM_KEYDOWN+WM_CHAR) for one physical key press.
+    edt.Msg_KeyDown(KeyEvent(KeyType::Space)); // OS "key down" event - now a no-op (case removed)
+    edt.Msg_KeyDown(KeyEvent(U' '));           // OS "char/text-input" event - inserts the space
+    BOOST_TEST(edt.GetText() == " ");          // exactly one space, not two
+}
+
+BOOST_FIXTURE_TEST_CASE(EditMaxLengthTruncatesInput, uiHelper::Fixture)
+{
+    const auto font = createMockFont({'a', 'b', 'c', 'd', 'e', '?'}); // '?' is glFont's missing-glyph fallback
+    ctrlEdit edt(nullptr, 0, DrawPoint(0, 0), Extent(200, 15), TextureColor::Green1, font.get(), 3 /*maxlength*/);
+    MouseCoords mc(edt.GetPos());
+    mc.ldown = true;
+    edt.Msg_LeftDown(mc);
+
+    for(char32_t c : {U'a', U'b', U'c', U'd', U'e'}) // 5 chars typed, cap is 3
+        edt.Msg_KeyDown(KeyEvent(c));
+    BOOST_TEST(edt.GetText() == "abc"); // 4th/5th rejected by AddChar's maxLength_ check
+
+    edt.SetText("abcde"); // SetText() truncates too, separate code path
+    BOOST_TEST(edt.GetText() == "abc");
 }
 
 BOOST_AUTO_TEST_CASE(AdjustWidthForMaxChars_SetsCorrectSize)

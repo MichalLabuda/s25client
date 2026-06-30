@@ -26,6 +26,7 @@ public:
     void SetDisabled(bool disabled = true) { this->isDisabled_ = disabled; }
     void SetNotify(bool notify = true) { this->notify_ = notify; }
     void SetNumberOnly(const bool activated) { this->numberOnly_ = activated; }
+    void SetFileNameOnly(const bool activated) { this->fileNameOnly_ = activated; }
 
     void Resize(const Extent& newSize) override;
 
@@ -59,4 +60,5 @@ private:
     unsigned viewStart_ = 0;
 
     bool numberOnly_ = false;
+    bool fileNameOnly_ = false;
 };

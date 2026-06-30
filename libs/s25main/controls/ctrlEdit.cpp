@@ -1,9 +1,10 @@
-// Copyright (C) 2005 - 2021 Settlers Freaks (sf-team at siedler25.org)
+// Copyright (C) 2005 - 2026 Settlers Freaks (sf-team at siedler25.org)
 //
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ctrlEdit.h"
 #include "CollisionDetection.h"
+#include "s25util/fileFuncs.h"
 #include "ctrlTextDeepening.h"
 #include "driver/MouseCoords.h"
 #include "drivers/VideoDriverWrapper.h"
@@ -35,6 +36,8 @@ void ctrlEdit::SetText(const std::string& text)
     text_ = s25util::utf8to32(text);
     if(numberOnly_)
         helpers::erase_if(text_, [](char32_t c) { return c < '0' || c > '9'; });
+    if(fileNameOnly_)
+        helpers::erase_if(text_, [](char32_t c) { return !isValidFileNameChar(c); });
     if(maxLength_ > 0 && text_.size() > maxLength_)
         text_.resize(maxLength_);
 
@@ -170,6 +173,9 @@ void ctrlEdit::AddChar(char32_t c)
     // Number-only text fields accept numbers only ;)
     if(numberOnly_ && (c < '0' || c > '9'))
         return;
+    // FileName valid chars only
+    if(fileNameOnly_ && !isValidFileNameChar(c))
+        return;
 
     if(maxLength_ > 0 && text_.size() >= maxLength_)
         return;
@@ -244,10 +250,6 @@ bool ctrlEdit::Msg_KeyDown(const KeyEvent& ke)
     switch(ke.kt)
     {
         default: return false;
-        // Wird bereits über Char geliefert !!
-        case KeyType::Space: // Leertaste
-            AddChar(0x20);
-            break;
 
         case KeyType::Left: // Cursor nach Links
             // Blockweise nach links, falls Strg gedrückt

@@ -11,7 +11,6 @@
 #include "controls/ctrlTable.h"
 #include "controls/ctrlText.h"
 #include "files.h"
-#include "helpers/containerUtils.h"
 #include "iwMsgbox.h"
 #include "gameData/const_gui_ids.h"
 #include "libsiedler2/ArchivItem_Ini.h"
@@ -19,7 +18,9 @@
 #include "libsiedler2/libsiedler2.h"
 #include "s25util/Log.h"
 #include "s25util/StringConversion.h"
+#include "s25util/fileFuncs.h"
 #include "s25util/strAlgos.h"
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/filesystem.hpp>
 #include <optional>
 
@@ -84,7 +85,10 @@ iwAddonPresetsBase::iwAddonPresetsBase(const std::string& title, const std::stri
     AddText(ID_txtFolder, DrawPoint(20, 236), presetsDir.string(), COLOR_YELLOW, FontStyle::TOP, SmallFont)
       ->setMaxWidth(400);
 
-    AddEdit(ID_edtName, DrawPoint(20, 254), Extent(400, 22), TextureColor::Green2, NormalFont);
+    // maxLength 251 = 255 filename limit - 4 chars for ".ini"; just discourages absurdly long
+    // input, isValidFileName() may still reject it since it counts bytes, not codepoints.
+    AddEdit(ID_edtName, DrawPoint(20, 254), Extent(400, 22), TextureColor::Green2, NormalFont, 251);
+    GetCtrl<ctrlEdit>(ID_edtName)->SetFileNameOnly(true);
 
     AddTextButton(ID_btAction, DrawPoint(20, 284), Extent(185, 22), TextureColor::Green2, actionLabel, NormalFont);
     AddTextButton(ID_btDelete, DrawPoint(235, 284), Extent(185, 22), TextureColor::Red1, _("Delete"), NormalFont);
@@ -127,7 +131,7 @@ void iwAddonPresetsBase::Msg_ButtonClick(const unsigned ctrl_id)
     }
 }
 
-void iwAddonPresetsBase::Msg_TableSelectItem(const unsigned /*ctrl_id*/, const boost::optional<unsigned>& selection)
+void iwAddonPresetsBase::Msg_TableSelectItem(const unsigned /*ctrl_id*/, const std::optional<unsigned>& selection)
 {
     const auto* table = GetCtrl<ctrlTable>(ID_tblPresets);
     GetCtrl<ctrlEdit>(ID_edtName)->SetText(selection ? table->GetItemText(*selection, 0) : "");
@@ -176,45 +180,21 @@ iwSaveAddonPreset::iwSaveAddonPreset(std::map<unsigned, unsigned> states)
 bfs::path iwSaveAddonPreset::GetSaveFilePath() const
 {
     std::string name = GetCtrl<ctrlEdit>(ID_edtName)->GetText();
-
-    // Trim leading/trailing whitespace
-    const auto first = name.find_first_not_of(" \t\r\n");
-    if(first == std::string::npos)
-        return {};
-    name = name.substr(first, name.find_last_not_of(" \t\r\n") - first + 1);
-
-    if(name.empty() || name == "." || name == "..")
-        return {};
+    boost::algorithm::trim_if(name, [](char c) { return c == ' ' || c == '\t' || c == '\r' || c == '\n'; });
     if(s25util::toLower(bfs::path(name).extension().string()) != ".ini")
         name += ".ini";
+    if(!isValidFileName(name))
+        return {};
     return GetPresetsDir() / name;
 }
 
 void iwSaveAddonPreset::DoAction()
 {
-    const std::string rawName = GetCtrl<ctrlEdit>(ID_edtName)->GetText();
-    if(rawName.find_first_of("/\\") != std::string::npos)
-    {
-        WINDOWMANAGER.Show(std::make_unique<iwMsgbox>(
-          _("Invalid Name"), _("The preset name must not contain path separators. Please choose a different name."),
-          this, MsgboxButton::Ok, MsgboxIcon::ExclamationRed));
-        return;
-    }
-
     const bfs::path filePath = GetSaveFilePath();
     if(filePath.empty())
-        return;
-
-    // Reject Windows reserved device names (NUL, CON, COM1, etc.) — these cause failures on Windows
-    // even with an extension, and presets should be portable across platforms.
-    static constexpr std::array reservedNames{"con",  "prn",  "aux",  "nul",  "com1", "com2", "com3", "com4",
-                                              "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2", "lpt3",
-                                              "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9"};
-    if(helpers::contains(reservedNames, s25util::toLower(filePath.stem().string())))
     {
-        WINDOWMANAGER.Show(std::make_unique<iwMsgbox>(
-          _("Invalid Name"), _("This filename is reserved and cannot be used. Please choose a different name."), this,
-          MsgboxButton::Ok, MsgboxIcon::ExclamationRed));
+        WINDOWMANAGER.Show(std::make_unique<iwMsgbox>(_("Invalid Name"), _("Please enter a valid preset name."), this,
+                                                      MsgboxButton::Ok, MsgboxIcon::ExclamationRed));
         return;
     }
 
